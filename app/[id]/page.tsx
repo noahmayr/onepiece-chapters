@@ -43,7 +43,7 @@ export default async function Page({
   return (
     <div
       dir="rtl"
-      style={{ paddingInline: "10vw" }}
+      style={{ paddingInline: "10vw", height: "100dvh" }}
       className="flex overflow-x-scroll flex-row justify-start min-w-full max-w-full h-screen bg-white scroll-smooth snap-x snap-mandatory"
     >
       {chapter.pages.map(({ src, alt, width, height }) => {
@@ -53,7 +53,12 @@ export default async function Page({
           <div
             key={src}
             className="flex justify-center items-center w-screen max-h-screen snap-center basis-full"
-            style={{ width: "100vw", minWidth: "100vw", flexBasis: "100vw" }}
+            style={{
+              width: "100vw",
+              minWidth: "100vw",
+              flexBasis: "100vw",
+              maxHeight: "100dvh",
+            }}
           >
             {/* <span className="text-2xl text-black" style={{ minWidth: "100vw" }}> */}
             {/*   {i} */}
