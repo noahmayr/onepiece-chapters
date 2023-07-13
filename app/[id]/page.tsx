@@ -1,5 +1,6 @@
 import type { IndexChapter } from "@/lib/chapters";
 import { getChapter, getChapters } from "@/lib/chapters";
+import clsx from "clsx";
 import type { Metadata, ResolvingMetadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -15,7 +16,7 @@ type Params = Pick<IndexChapter, "id">;
 
 export async function generateMetadata(
   { params: { id } }: { params: Params },
-  parent: ResolvingMetadata
+  parent: ResolvingMetadata,
 ): Promise<Metadata> {
   const chapter = await getChapter(id);
   if (chapter === undefined) {
@@ -43,18 +44,19 @@ export default async function Page({
     <div className="flex flex-row-reverse flex-wrap gap-y-12 justify-center md:gap-y-24">
       {chapter.pages.map(({ src, alt, width, height }) => {
         const fullWidth = width > height;
+        const rowClass = clsx(
+          "max-h-screen",
+          fullWidth ? "basis-auto" : "md:basis-1/2 basis-auto",
+        );
+
         return (
-          <div
-            key={src}
-            className={fullWidth ? "basis-auto" : "md:basis-1/2 basis-auto"}
-          >
+          <div key={src} className={rowClass}>
             <Image
               src={src}
               alt={alt}
-              width={width}
-              height={height}
-            // sizes="100vw"
-            // className="w-full h-auto"
+              width={fullWidth ? 2200 : 1100}
+              height={1600}
+              className="object-contain max-h-full"
             />
           </div>
         );

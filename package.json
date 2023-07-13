@@ -7,17 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "format": "pnpx prettier --write ."
+    "format": "pnpx prettier --write .",
+    "check:format": "pnpx prettier --check .",
+    "check:types": "tsc --noEmit"
   },
   "dependencies": {
     "@types/node": "20.4.1",
     "@types/react": "18.2.14",
     "@types/react-dom": "18.2.6",
     "autoprefixer": "10.4.14",
-    "buffer-image-size": "^0.6.4",
+    "clsx": "^1.2.1",
     "eslint": "8.44.0",
     "eslint-config-next": "13.4.9",
-    "image-size": "^1.0.2",
     "jsdom": "^22.1.0",
     "next": "13.4.9",
     "postcss": "8.4.25",
@@ -31,5 +32,8 @@
     "@types/jsdom": "^21.1.1",
     "@types/probe-image-size": "^7.2.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0"
+  },
+  "volta": {
+    "node": "18.16.1"
   }
 }
