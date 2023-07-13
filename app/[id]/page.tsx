@@ -3,6 +3,7 @@ import { getChapter, getChapters } from "@/lib/chapters";
 import clsx from "clsx";
 import type { Metadata, ResolvingMetadata } from "next";
 import Image from "next/image";
+import { notFound } from "next/navigation";
 
 export const dynamicParams = true;
 export const revalidate = false;
@@ -37,9 +38,7 @@ export default async function Page({
 }) {
   const chapter = await getChapter(id);
   if (chapter === undefined) {
-    return {
-      notFound: true,
-    };
+    notFound();
   }
   return (
     <div className="flex flex-row-reverse flex-wrap gap-y-12 justify-center md:gap-y-24">
