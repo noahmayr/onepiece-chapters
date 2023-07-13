@@ -15,7 +15,7 @@ type Params = Pick<IndexChapter, "id">;
 
 export async function generateMetadata(
   { params: { id } }: { params: Params },
-  parent: ResolvingMetadata
+  parent: ResolvingMetadata,
 ): Promise<Metadata> {
   const chapter = await getChapter(id);
   if (chapter === undefined) {
@@ -47,7 +47,7 @@ export default async function Page({
         const fullWidth = width > height;
         const rowClass = clsx(
           "max-h-screen",
-          fullWidth ? "basis-auto" : "md:basis-1/2 basis-auto"
+          fullWidth ? "basis-auto" : "md:basis-1/2 basis-auto",
         );
 
         return (
