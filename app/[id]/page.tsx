@@ -41,11 +41,14 @@ export default async function Page({
     };
   }
   return (
-    <div className="flex flex-row-reverse flex-wrap gap-y-24 justify-center">
+    <div className="flex flex-row-reverse flex-wrap gap-y-12 justify-center md:gap-y-24">
       {chapter.pages.map(({ src, alt, width, height }) => {
         const fullWidth = width > height;
         return (
-          <div key={src} style={{ flexBasis: fullWidth ? "100%" : "50%" }}>
+          <div
+            key={src}
+            className={fullWidth ? "basis-auto" : "md:basis-1/2 basis-auto"}
+          >
             <Image
               src={src}
               alt={alt}
