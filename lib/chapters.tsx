@@ -2,7 +2,7 @@ import { JSDOM } from "jsdom";
 import { cache } from "react";
 import probe from "probe-image-size";
 import slugify from "slugify";
-
+import { kv } from "@vercel/kv";
 export interface IndexChapter {
   id: string;
   title: string;
@@ -78,15 +78,19 @@ export const getChapters = cache(
     const chapterElements = Array.from(
       document.querySelectorAll<HTMLAnchorElement>('a[href^="/chapters"]')
     );
-    return chapterElements.map(({ href, children }) => {
-      const [chapter, title] = Array.from(children).map((div) => div.innerHTML);
-      const path = new URL(href, "https://localhost").pathname;
-      return {
-        id: chapter.replace(/.*?(\d+)/, "$1"),
-        title,
-        path,
-      };
-    });
+    return chapterElements
+      .map(({ href, children }) => {
+        const [chapter, title] = Array.from(children).map(
+          (div) => div.innerHTML
+        );
+        const path = new URL(href, "https://localhost").pathname;
+        return {
+          id: chapter.replace(/.*?(\d+)/, "$1"),
+          title,
+          path,
+        };
+      })
+      .sort((a, b) => parseInt(b.id) - parseInt(a.id));
   }
 );
 
@@ -120,7 +124,11 @@ export const getChapter = cache(
     if (chapter === undefined) {
       return undefined;
     }
-
+    const cached = await kv.hget<DetailChapter>(mangaSlug, id);
+    if (cached) {
+      return cached;
+    }
+    console.warn(`cache miss for chapter '${mangaSlug}:${id}'`);
     const html = await fetch(new URL(chapter.path, TCB_HOST));
     const {
       window: { document },
@@ -136,6 +144,8 @@ export const getChapter = cache(
         ...(await getImageSize(src)),
       });
     }
-    return { ...chapter, pages };
+    const result = { ...chapter, pages };
+    await kv.hset(mangaSlug, { [id]: result });
+    return result;
   }
 );
