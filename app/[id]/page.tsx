@@ -1,6 +1,5 @@
 import type { IndexChapter } from "@/lib/chapters";
 import { getChapter, getChapters } from "@/lib/chapters";
-import clsx from "clsx";
 import type { Metadata, ResolvingMetadata } from "next";
 import Image from "next/image";
 
@@ -47,7 +46,7 @@ export default async function Page({
       style={{ paddingInline: "10vw" }}
       className="flex overflow-x-scroll flex-row justify-center min-w-full max-w-full h-screen bg-white scroll-smooth snap-x snap-mandatory"
     >
-      {chapter.pages.map(({ src, alt, width, height }, i) => {
+      {chapter.pages.map(({ src, alt, width, height }) => {
         const fullWidth = width > height;
 
         return (
