@@ -64,6 +64,7 @@ export default async function Page({
               width={fullWidth ? 2200 : 1100}
               height={1600}
               className="object-contain h-full max-h-screen max-w-screen w-fit"
+              style={{ maxHeight: "100dvh" }}
             />
           </div>
         );
