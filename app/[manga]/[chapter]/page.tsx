@@ -1,5 +1,4 @@
-import type { IndexChapter } from "@/lib/chapters";
-import { getChapter, getChapters } from "@/lib/chapters";
+import { getChapter, getChapters, getMangas } from "@/lib/chapters";
 import clsx from "clsx";
 import type { Metadata, ResolvingMetadata } from "next";
 import Image from "next/image";
@@ -9,16 +8,30 @@ export const dynamicParams = true;
 export const revalidate = false;
 
 export async function generateStaticParams() {
-  return (await getChapters()).slice(0, 50);
+  const mangas = await getMangas();
+  const paramsPerManga = await Promise.all(
+    mangas.map(async (manga) => {
+      const chapters = await getChapters(manga.slug);
+      return chapters
+        ?.slice(0, 50)
+        .map((chapter) => ({ manga: manga.slug, chapter: chapter.id }));
+    }),
+  );
+  return paramsPerManga.flat();
 }
 
-type Params = Pick<IndexChapter, "id">;
+interface PageProps {
+  params: {
+    manga: string;
+    chapter: string;
+  };
+}
 
 export async function generateMetadata(
-  { params: { id } }: { params: Params },
+  { params: { manga, chapter: id } }: PageProps,
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
-  const chapter = await getChapter(id);
+  const chapter = await getChapter(manga, id);
   if (chapter === undefined) {
     const resolvedMetadata = (await parent) as Metadata;
     return resolvedMetadata ?? {};
@@ -32,11 +45,9 @@ export async function generateMetadata(
 }
 
 export default async function Page({
-  params: { id },
-}: {
-  params: Pick<IndexChapter, "id">;
-}) {
-  const chapter = await getChapter(id);
+  params: { manga, chapter: id },
+}: PageProps) {
+  const chapter = await getChapter(manga, id);
   if (chapter === undefined) {
     notFound();
   }

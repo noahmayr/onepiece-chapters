@@ -1,37 +1,94 @@
 import { JSDOM } from "jsdom";
 import { cache } from "react";
 import probe from "probe-image-size";
+import slugify from "slugify";
 
 export interface IndexChapter {
   id: string;
   title: string;
   path: string;
+}
+
+export interface Manga {
   slug: string;
+  title: string;
+  path: string;
+  image: string;
 }
 
 const TCB_HOST = "https://tcbscans.com/";
-const CHAPTER_INDEX_PATH = "/mangas/5/one-piece";
+const MANGAS_ENDPOINT = "/projects";
 
-export const getChapters = cache(async (): Promise<IndexChapter[]> => {
-  const html = await fetch(new URL(CHAPTER_INDEX_PATH, TCB_HOST));
+const isDefined = <T,>(it: T | undefined | null): it is T => it != null;
+
+export const getMangas = cache(async (): Promise<Manga[]> => {
+  const html = await fetch(new URL(MANGAS_ENDPOINT, TCB_HOST));
   const {
     window: { document },
   } = new JSDOM(await html.text());
 
-  const chapterElements = Array.from(
-    document.querySelectorAll<HTMLAnchorElement>('a[href^="/chapters"]'),
-  );
-  return chapterElements.map(({ href, children }) => {
-    const [chapter, title] = Array.from(children).map((div) => div.innerHTML);
-    const path = new URL(href, "https://localhost").pathname;
-    return {
-      id: chapter.replace(/.*?(\d+)/, "$1"),
-      title,
-      path,
-      slug: href.replace(/.*\/([^\/]+)$/, "$1"),
-    };
-  });
+  interface MangaElements {
+    title?: string;
+    image?: string;
+  }
+
+  const mangaElements = Array.from(
+    document.querySelectorAll<HTMLAnchorElement>('a[href^="/mangas"]'),
+  ).reduce<Map<string, MangaElements>>((mangaElements, element) => {
+    const path = new URL(element.href, "https://localhost").pathname;
+    const partialData: MangaElements = mangaElements.get(path) ?? {};
+    if (!element.children.length) {
+      partialData.title ??= element.innerHTML;
+    } else {
+      partialData.image ??=
+        element.getElementsByTagName("img").item(0)?.src ?? undefined;
+    }
+
+    mangaElements.set(path, partialData);
+    return mangaElements;
+  }, new Map());
+
+  return Array.from(mangaElements)
+    .map(([path, { title, image }]) => {
+      if (!title || !image) {
+        return undefined;
+      }
+      return {
+        slug: slugify(title.toLowerCase()).replace(":", "-"),
+        title,
+        path,
+        image,
+      };
+    })
+    .filter(isDefined);
 });
+
+export const getChapters = cache(
+  async (mangaSlug: string): Promise<IndexChapter[] | undefined> => {
+    const manga = (await getMangas()).find((manga) => manga.slug === mangaSlug);
+    if (manga === undefined) {
+      return undefined;
+    }
+
+    const html = await fetch(new URL(manga.path, TCB_HOST));
+    const {
+      window: { document },
+    } = new JSDOM(await html.text());
+
+    const chapterElements = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>('a[href^="/chapters"]'),
+    );
+    return chapterElements.map(({ href, children }) => {
+      const [chapter, title] = Array.from(children).map((div) => div.innerHTML);
+      const path = new URL(href, "https://localhost").pathname;
+      return {
+        id: chapter.replace(/.*?(\d+)/, "$1"),
+        title,
+        path,
+      };
+    });
+  },
+);
 
 export interface Page {
   src: string;
@@ -52,11 +109,14 @@ const getImageSize = cache(
 );
 
 export const getChapter = cache(
-  async (id: string): Promise<DetailChapter | undefined> => {
-    const chapter = (await getChapters()).find((chapter) => chapter.id === id);
+  async (mangaSlug: string, id: string): Promise<DetailChapter | undefined> => {
+    const chapter = (await getChapters(mangaSlug))?.find(
+      (chapter) => chapter.id === id,
+    );
     if (chapter === undefined) {
       return undefined;
     }
+
     const html = await fetch(new URL(chapter.path, TCB_HOST));
     const {
       window: { document },
