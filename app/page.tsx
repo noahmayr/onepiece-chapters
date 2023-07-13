@@ -8,6 +8,10 @@ export async function generateStaticParams() {
   return mangas.map((manga) => ({ manga: manga.slug }));
 }
 
+export const metadata = {
+  title: "Manga Chapters",
+};
+
 export default async function Page() {
   const mangas = await getMangas();
 

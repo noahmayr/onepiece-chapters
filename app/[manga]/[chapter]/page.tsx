@@ -15,7 +15,7 @@ export async function generateStaticParams() {
       return chapters
         ?.slice(0, 50)
         .map((chapter) => ({ manga: manga.slug, chapter: chapter.id }));
-    }),
+    })
   );
   return paramsPerManga.flat();
 }
@@ -28,16 +28,17 @@ interface PageProps {
 }
 
 export async function generateMetadata(
-  { params: { manga, chapter: id } }: PageProps,
-  parent: ResolvingMetadata,
+  { params: { manga: mangaSlug, chapter: id } }: PageProps,
+  parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const chapter = await getChapter(manga, id);
-  if (chapter === undefined) {
+  const manga = (await getMangas()).find((manga) => manga.slug === mangaSlug);
+  const chapter = await getChapter(mangaSlug, id);
+  if (chapter === undefined || manga === undefined) {
     const resolvedMetadata = (await parent) as Metadata;
     return resolvedMetadata ?? {};
   }
   return {
-    title: `One Piece Chapter ${chapter.id}: ${chapter?.title}`,
+    title: `${manga.title} Chapter ${chapter.id}: ${chapter?.title}`,
     openGraph: {
       images: chapter.pages.map((page) => page.src),
     },
@@ -57,7 +58,7 @@ export default async function Page({
         const fullWidth = width > height;
         const rowClass = clsx(
           "max-h-screen",
-          fullWidth ? "basis-auto" : "md:basis-1/2 basis-auto",
+          fullWidth ? "basis-auto" : "md:basis-1/2 basis-auto"
         );
 
         return (

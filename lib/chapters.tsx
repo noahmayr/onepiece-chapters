@@ -33,7 +33,7 @@ export const getMangas = cache(async (): Promise<Manga[]> => {
   }
 
   const mangaElements = Array.from(
-    document.querySelectorAll<HTMLAnchorElement>('a[href^="/mangas"]'),
+    document.querySelectorAll<HTMLAnchorElement>('a[href^="/mangas"]')
   ).reduce<Map<string, MangaElements>>((mangaElements, element) => {
     const path = new URL(element.href, "https://localhost").pathname;
     const partialData: MangaElements = mangaElements.get(path) ?? {};
@@ -76,7 +76,7 @@ export const getChapters = cache(
     } = new JSDOM(await html.text());
 
     const chapterElements = Array.from(
-      document.querySelectorAll<HTMLAnchorElement>('a[href^="/chapters"]'),
+      document.querySelectorAll<HTMLAnchorElement>('a[href^="/chapters"]')
     );
     return chapterElements.map(({ href, children }) => {
       const [chapter, title] = Array.from(children).map((div) => div.innerHTML);
@@ -87,7 +87,7 @@ export const getChapters = cache(
         path,
       };
     });
-  },
+  }
 );
 
 export interface Page {
@@ -103,15 +103,19 @@ export interface DetailChapter extends IndexChapter {
 
 const getImageSize = cache(
   async (src: string): Promise<{ width: number; height: number }> => {
-    const { width, height } = await probe(src);
-    return { width, height };
-  },
+    try {
+      const { width, height } = await probe(src);
+      return { width, height };
+    } catch {
+      return { width: 1100, height: 1600 };
+    }
+  }
 );
 
 export const getChapter = cache(
   async (mangaSlug: string, id: string): Promise<DetailChapter | undefined> => {
     const chapter = (await getChapters(mangaSlug))?.find(
-      (chapter) => chapter.id === id,
+      (chapter) => chapter.id === id
     );
     if (chapter === undefined) {
       return undefined;
@@ -122,15 +126,16 @@ export const getChapter = cache(
       window: { document },
     } = new JSDOM(await html.text());
     const imageElements = Array.from(
-      document.querySelectorAll<HTMLImageElement>("img.fixed-ratio-content"),
+      document.querySelectorAll<HTMLImageElement>("img.fixed-ratio-content")
     );
-    const pages = await Promise.all(
-      imageElements.map(async ({ src, alt }) => ({
+    const pages: Page[] = [];
+    for (const { src, alt } of imageElements) {
+      pages.push({
         src,
         alt,
         ...(await getImageSize(src)),
-      })),
-    );
+      });
+    }
     return { ...chapter, pages };
-  },
+  }
 );

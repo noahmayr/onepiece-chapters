@@ -1,5 +1,6 @@
 import { getChapters, getMangas } from "@/lib/chapters";
 import { notFound } from "next/navigation";
+import type { Metadata, ResolvingMetadata } from "next/types";
 
 export const dynamicParams = true;
 export const revalidate = false;
@@ -12,6 +13,23 @@ export async function generateStaticParams() {
 interface PageProps {
   params: {
     manga: string;
+  };
+}
+
+export async function generateMetadata(
+  { params: { manga: mangaSlug } }: PageProps,
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  const manga = (await getMangas()).find((manga) => manga.slug === mangaSlug);
+  if (manga === undefined) {
+    const resolvedMetadata = (await parent) as Metadata;
+    return resolvedMetadata ?? {};
+  }
+  return {
+    title: manga?.title,
+    openGraph: {
+      images: [manga.image],
+    },
   };
 }
 
