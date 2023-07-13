@@ -19,7 +19,7 @@ export const getChapters = cache(async (): Promise<IndexChapter[]> => {
   } = new JSDOM(await html.text());
 
   const chapterElements = Array.from(
-    document.querySelectorAll<HTMLAnchorElement>('a[href^="/chapters"]')
+    document.querySelectorAll<HTMLAnchorElement>('a[href^="/chapters"]'),
   );
   return chapterElements.map(({ href, children }) => {
     const [chapter, title] = Array.from(children).map((div) => div.innerHTML);
@@ -48,7 +48,7 @@ const getImageSize = cache(
   async (src: string): Promise<{ width: number; height: number }> => {
     const { width, height } = await probe(src);
     return { width, height };
-  }
+  },
 );
 
 export const getChapter = cache(
@@ -62,15 +62,15 @@ export const getChapter = cache(
       window: { document },
     } = new JSDOM(await html.text());
     const imageElements = Array.from(
-      document.querySelectorAll<HTMLImageElement>("img.fixed-ratio-content")
+      document.querySelectorAll<HTMLImageElement>("img.fixed-ratio-content"),
     );
     const pages = await Promise.all(
       imageElements.map(async ({ src, alt }) => ({
         src,
         alt,
         ...(await getImageSize(src)),
-      }))
+      })),
     );
     return { ...chapter, pages };
-  }
+  },
 );
