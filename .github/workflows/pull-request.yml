@@ -8,7 +8,25 @@ on:
       - synchronize
 
 jobs:
-  build:
+  # build:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       node-version: [18]
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: pnpm/action-setup@v2
+  #       with:
+  #         version: 8
+  #     - name: Use Node.js ${{ matrix.node-version }}
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: ${{ matrix.node-version }}
+  #         cache: "pnpm"
+  #     - name: Install dependencies
+  #       run: pnpm install
+
+  lint:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -25,24 +43,45 @@ jobs:
           cache: "pnpm"
       - name: Install dependencies
         run: pnpm install
-
-  lint:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
       - name: Lint
         run: pnpm lint
 
   format:
-    needs: build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18]
     steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install
       - name: Check format
         run: pnpm check:format
 
   typecheck:
-    needs: build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18]
     steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install
       - name: Typecheck
         run: pnpm check:types
