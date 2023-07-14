@@ -13,7 +13,7 @@ export async function generateStaticParams() {
     mangas.map(async (manga) => {
       const chapters = await getChapters(manga.slug);
       return chapters
-        ?.slice(0, 50)
+        ?.slice(0, 100)
         .map((chapter) => ({ manga: manga.slug, chapter: chapter.id }));
     })
   );
