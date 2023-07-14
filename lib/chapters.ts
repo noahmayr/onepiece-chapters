@@ -1,8 +1,9 @@
 import { JSDOM } from "jsdom";
 import { cache } from "react";
-import probe from "probe-image-size";
 import slugify from "slugify";
 import { kv } from "@vercel/kv";
+import { getPlaiceholder } from "plaiceholder";
+
 export interface IndexChapter {
   id: string;
   title: string;
@@ -19,7 +20,7 @@ export interface Manga {
 const TCB_HOST = "https://tcbscans.com/";
 const MANGAS_ENDPOINT = "/projects";
 
-const isDefined = <T,>(it: T | undefined | null): it is T => it != null;
+export const isDefined = <T>(it: T | undefined | null): it is T => it != null;
 
 export const getMangas = cache(async (): Promise<Manga[]> => {
   const html = await fetch(new URL(MANGAS_ENDPOINT, TCB_HOST));
@@ -94,24 +95,60 @@ export const getChapters = cache(
   }
 );
 
-export interface Page {
+export interface Panel {
+  missing: false;
   src: string;
   alt: string;
   width: number;
   height: number;
+  base64: string;
+}
+
+export interface MissingPanel {
+  missing: true;
+  alt: string;
+  src: string;
 }
 
 export interface DetailChapter extends IndexChapter {
-  pages: Page[];
+  panels: (Panel | MissingPanel)[];
 }
 
-const getImageSize = cache(
-  async (src: string): Promise<{ width: number; height: number }> => {
+const awaitInBatches = async <T>(
+  promises: Promise<T>[],
+  batchSize = 6
+): Promise<T[]> => {
+  const result: T[] = [];
+  let batch: Promise<T>[] = [];
+  for (const promise of promises) {
+    if (batch.length >= batchSize) {
+      result.push(...(await Promise.all(batch)));
+      batch = [];
+    }
+    batch.push(promise);
+  }
+  result.push(...(await Promise.all(batch)));
+  return result;
+};
+
+const getPanelData = cache(
+  async (src: string, alt: string): Promise<Panel | MissingPanel> => {
     try {
-      const { width, height } = await probe(src);
-      return { width, height };
-    } catch {
-      return { width: 1100, height: 1600 };
+      const buffer = await fetch(src).then(async (res) =>
+        Buffer.from(await res.arrayBuffer())
+      );
+
+      const {
+        base64,
+        metadata: { width, height },
+      } = await getPlaiceholder(buffer, { size: 10 });
+      return { missing: false, src, alt, width, height, base64 };
+    } catch (e) {
+      return {
+        missing: true,
+        src,
+        alt,
+      };
     }
   }
 );
@@ -136,15 +173,10 @@ export const getChapter = cache(
     const imageElements = Array.from(
       document.querySelectorAll<HTMLImageElement>("img.fixed-ratio-content")
     );
-    const pages: Page[] = [];
-    for (const { src, alt } of imageElements) {
-      pages.push({
-        src,
-        alt,
-        ...(await getImageSize(src)),
-      });
-    }
-    const result = { ...chapter, pages };
+    const panels: (Panel | MissingPanel)[] = await awaitInBatches(
+      imageElements.map(async ({ src, alt }) => await getPanelData(src, alt))
+    );
+    const result: DetailChapter = { ...chapter, panels: panels };
     await kv.hset(mangaSlug, { [id]: result });
     return result;
   }
