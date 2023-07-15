@@ -2,6 +2,7 @@ import type { IndexChapter } from "@/lib/chapters";
 import { getChapter, getChapters } from "@/lib/chapters";
 import type { Metadata, ResolvingMetadata } from "next";
 import Image from "next/image";
+import { notFound } from "next/navigation";
 
 export const dynamicParams = true;
 export const revalidate = false;
@@ -36,9 +37,7 @@ export default async function Page({
 }) {
   const chapter = await getChapter(id);
   if (chapter === undefined) {
-    return {
-      notFound: true,
-    };
+    notFound();
   }
   return (
     <div
