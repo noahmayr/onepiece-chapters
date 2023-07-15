@@ -38,6 +38,8 @@ export async function generateMetadata(
     const resolvedMetadata = (await parent) as Metadata;
     return resolvedMetadata ?? {};
   }
+  console.log(`getting metadata for /${mangaSlug}/${id}`);
+
   return {
     title: `${chapter.manga.title} Chapter ${chapter.id}: ${chapter?.title}`,
     openGraph: {
@@ -58,6 +60,7 @@ export default async function Page({
   if (chapter === undefined) {
     notFound();
   }
+  console.log(`rendering /${manga}/${id}`);
   return (
     <div className="flex flex-row-reverse flex-wrap gap-x-4 gap-y-8 justify-center md:gap-y-24">
       {chapter.panels.map((panel) => {

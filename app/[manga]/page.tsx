@@ -26,6 +26,7 @@ export async function generateMetadata(
     const resolvedMetadata = (await parent) as Metadata;
     return resolvedMetadata ?? {};
   }
+  console.log(`getting metadata for /${mangaSlug}`);
   return {
     title: manga?.title,
     openGraph: {
@@ -40,6 +41,7 @@ export default async function Page({ params: { manga } }: PageProps) {
     notFound();
   }
 
+  console.log(`rendering /${manga}`);
   return (
     <div>
       <h1 className="mb-4 text-2xl">One Piece Chapters</h1>

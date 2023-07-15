@@ -156,6 +156,7 @@ export const getChapter = cache(
   async (mangaSlug: string, id: string): Promise<DetailChapter | undefined> => {
     const cached = await kv.hget<DetailChapter>(mangaSlug, id);
     if (cached) {
+      console.warn(`cache hit for chapter '${mangaSlug}:${id}'`);
       return cached;
     }
 
