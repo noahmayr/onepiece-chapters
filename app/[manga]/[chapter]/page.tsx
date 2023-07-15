@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import styles from './styles.module.css';
 
+export const dynamic = 'force-static';
 export const dynamicParams = true;
 export const revalidate = false;
 

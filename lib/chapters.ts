@@ -112,43 +112,43 @@ export interface DetailChapter extends IndexChapter {
   panels: (Panel | MissingPanel)[];
 }
 
-const awaitInBatches = async <T>(
-  promises: Promise<T>[],
-  batchSize = 16,
-): Promise<T[]> => {
-  const result: T[] = [];
-  let batch: Promise<T>[] = [];
-  for (const promise of promises) {
+const mapInBatches = async <T, R>(
+  items: T[],
+  predicate: (item: T) => R | Promise<R>,
+  batchSize = 8,
+): Promise<R[]> => {
+  const result: R[] = [];
+  let batch: T[] = [];
+  for (const item of items) {
     if (batch.length >= batchSize) {
-      result.push(...(await Promise.all(batch)));
+      result.push(...(await Promise.all(batch.map(predicate))));
       batch = [];
     }
-    batch.push(promise);
+    batch.push(item);
   }
-  result.push(...(await Promise.all(batch)));
+  result.push(...(await Promise.all(batch.map(predicate))));
   return result;
 };
 
 const getPanelData = cache(
   async (src: string, alt: string): Promise<Panel | MissingPanel> => {
-    try {
-      console.warn(`analyzing image "${alt}" from ${src}`);
-      const buffer = await fetch(src).then(async (res) =>
-        Buffer.from(await res.arrayBuffer()),
-      );
-
-      const {
-        base64,
-        metadata: { width, height },
-      } = await getPlaiceholder(buffer, { size: 10 });
-      return { missing: false, src, alt, width, height, base64 };
-    } catch (e) {
+    console.warn(`analyzing image "${alt}" from ${src}`);
+    const response = await fetch(src);
+    if (response.status === 404) {
       return {
         missing: true,
         src,
         alt,
       };
     }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    const {
+      base64,
+      metadata: { width, height },
+    } = await getPlaiceholder(buffer, { size: 10 });
+    return { missing: false, src, alt, width, height, base64 };
   },
 );
 
@@ -174,8 +174,9 @@ export const getChapter = cache(
     const imageElements = Array.from(
       document.querySelectorAll<HTMLImageElement>('img.fixed-ratio-content'),
     );
-    const panels: (Panel | MissingPanel)[] = await awaitInBatches(
-      imageElements.map(async ({ src, alt }) => await getPanelData(src, alt)),
+    const panels: (Panel | MissingPanel)[] = await mapInBatches(
+      imageElements,
+      async ({ src, alt }) => await getPanelData(src, alt),
     );
 
     const result: DetailChapter = { ...chapter, panels: panels };
