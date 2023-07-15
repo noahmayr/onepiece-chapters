@@ -14,7 +14,7 @@ export async function generateStaticParams() {
     mangas.map(async (manga) => {
       const chapters = await getChapters(manga.slug);
       return chapters
-        ?.slice(0, 25)
+        ?.slice(0, 2)
         .map((chapter) => ({ manga: manga.slug, chapter: chapter.id }));
     }),
   );
@@ -32,14 +32,13 @@ export async function generateMetadata(
   { params: { manga: mangaSlug, chapter: id } }: PageProps,
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
-  const manga = (await getMangas()).find((manga) => manga.slug === mangaSlug);
   const chapter = await getChapter(mangaSlug, id);
-  if (chapter === undefined || manga === undefined) {
+  if (chapter === undefined) {
     const resolvedMetadata = (await parent) as Metadata;
     return resolvedMetadata ?? {};
   }
   return {
-    title: `${manga.title} Chapter ${chapter.id}: ${chapter?.title}`,
+    title: `${chapter.manga.title} Chapter ${chapter.id}: ${chapter?.title}`,
     openGraph: {
       images: chapter.panels
         .map((panel) => (panel.missing ? undefined : panel.src))
@@ -95,6 +94,7 @@ export default async function Page({
               blurDataURL={base64}
               width={width}
               height={1600}
+              loading="lazy"
               style={{
                 height: '100dvh',
                 aspectRatio: width / height,

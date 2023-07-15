@@ -8,6 +8,7 @@ export interface IndexChapter {
   id: string;
   title: string;
   path: string;
+  manga: Manga;
 }
 
 export interface Manga {
@@ -86,6 +87,7 @@ export const getChapters = cache(
         id: chapter.replace(/.*?(\d+)/, '$1'),
         title,
         path,
+        manga,
       };
     });
   },
@@ -112,7 +114,7 @@ export interface DetailChapter extends IndexChapter {
 
 const awaitInBatches = async <T>(
   promises: Promise<T>[],
-  batchSize = 6,
+  batchSize = 16,
 ): Promise<T[]> => {
   const result: T[] = [];
   let batch: Promise<T>[] = [];
@@ -130,6 +132,7 @@ const awaitInBatches = async <T>(
 const getPanelData = cache(
   async (src: string, alt: string): Promise<Panel | MissingPanel> => {
     try {
+      console.warn(`analyzing image "${alt}" from ${src}`);
       const buffer = await fetch(src).then(async (res) =>
         Buffer.from(await res.arrayBuffer()),
       );
@@ -151,16 +154,18 @@ const getPanelData = cache(
 
 export const getChapter = cache(
   async (mangaSlug: string, id: string): Promise<DetailChapter | undefined> => {
+    const cached = await kv.hget<DetailChapter>(mangaSlug, id);
+    if (cached) {
+      return cached;
+    }
+
     const chapter = (await getChapters(mangaSlug))?.find(
       (chapter) => chapter.id === id,
     );
     if (chapter === undefined) {
       return undefined;
     }
-    const cached = await kv.hget<DetailChapter>(mangaSlug, id);
-    if (cached) {
-      return cached;
-    }
+
     console.warn(`cache miss for chapter '${mangaSlug}:${id}'`);
     const html = await fetch(new URL(chapter.path, TCB_HOST));
     const {
@@ -172,7 +177,9 @@ export const getChapter = cache(
     const panels: (Panel | MissingPanel)[] = await awaitInBatches(
       imageElements.map(async ({ src, alt }) => await getPanelData(src, alt)),
     );
+
     const result: DetailChapter = { ...chapter, panels: panels };
+
     await kv.hset(mangaSlug, { [id]: result });
     return result;
   },
