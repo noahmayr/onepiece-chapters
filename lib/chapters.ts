@@ -79,19 +79,15 @@ export const getChapters = cache(
     const chapterElements = Array.from(
       document.querySelectorAll<HTMLAnchorElement>('a[href^="/chapters"]'),
     );
-    return chapterElements
-      .map(({ href, children }) => {
-        const [chapter, title] = Array.from(children).map(
-          (div) => div.innerHTML,
-        );
-        const path = new URL(href, 'https://localhost').pathname;
-        return {
-          id: chapter.replace(/.*?(\d+)/, '$1'),
-          title,
-          path,
-        };
-      })
-      .sort((a, b) => parseInt(b.id) - parseInt(a.id));
+    return chapterElements.map(({ href, children }) => {
+      const [chapter, title] = Array.from(children).map((div) => div.innerHTML);
+      const path = new URL(href, 'https://localhost').pathname;
+      return {
+        id: chapter.replace(/.*?(\d+)/, '$1'),
+        title,
+        path,
+      };
+    });
   },
 );
 

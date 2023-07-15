@@ -2,6 +2,7 @@ import { getChapters, getMangas } from '@/lib/chapters';
 import { notFound } from 'next/navigation';
 import type { Metadata, ResolvingMetadata } from 'next/types';
 
+export const dynamic = 'force-static';
 export const dynamicParams = true;
 export const revalidate = false;
 

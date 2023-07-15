@@ -35,7 +35,8 @@
   "devDependencies": {
     "@types/jsdom": "^21.1.1",
     "@types/probe-image-size": "^7.2.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0"
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "prettier": "^3.0.0"
   },
   "volta": {
     "node": "18.16.1"
