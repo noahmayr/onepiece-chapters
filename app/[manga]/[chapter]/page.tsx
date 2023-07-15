@@ -1,9 +1,9 @@
-import { getChapter, getChapters, getMangas, isDefined } from "@/lib/chapters";
-import clsx from "clsx";
-import type { Metadata, ResolvingMetadata } from "next";
-import Image from "next/image";
-import { notFound } from "next/navigation";
-import styles from "./styles.module.css";
+import { getChapter, getChapters, getMangas, isDefined } from '@/lib/chapters';
+import clsx from 'clsx';
+import type { Metadata, ResolvingMetadata } from 'next';
+import Image from 'next/image';
+import { notFound } from 'next/navigation';
+import styles from './styles.module.css';
 
 export const dynamicParams = true;
 export const revalidate = false;
@@ -16,7 +16,7 @@ export async function generateStaticParams() {
       return chapters
         ?.slice(0, 25)
         .map((chapter) => ({ manga: manga.slug, chapter: chapter.id }));
-    })
+    }),
   );
   return paramsPerManga.flat();
 }
@@ -30,7 +30,7 @@ interface PageProps {
 
 export async function generateMetadata(
   { params: { manga: mangaSlug, chapter: id } }: PageProps,
-  parent: ResolvingMetadata
+  parent: ResolvingMetadata,
 ): Promise<Metadata> {
   const manga = (await getMangas()).find((manga) => manga.slug === mangaSlug);
   const chapter = await getChapter(mangaSlug, id);
@@ -49,7 +49,7 @@ export async function generateMetadata(
 }
 
 const PLACEHOLDER =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAQCAQAAABqtE31AAAAE0lEQVR42mN8+58BC2AcFaaNMABb8R7RhVqd7QAAAABJRU5ErkJggg==";
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAQCAQAAABqtE31AAAAE0lEQVR42mN8+58BC2AcFaaNMABb8R7RhVqd7QAAAABJRU5ErkJggg==';
 
 export default async function Page({
   params: { manga, chapter: id },
@@ -62,16 +62,16 @@ export default async function Page({
     <div className="flex flex-row-reverse flex-wrap gap-x-4 gap-y-8 justify-center md:gap-y-24">
       {chapter.panels.map((panel) => {
         const baseRowClass =
-          "max-h-screen flex justify-center basis-auto max-h-full";
+          'max-h-screen flex justify-center basis-auto max-h-full';
         if (panel.missing) {
           return (
-            <div key={panel.src} className={clsx(baseRowClass, "basis-1/2")}>
+            <div key={panel.src} className={clsx(baseRowClass, 'basis-1/2')}>
               <div
                 style={{
-                  height: "100dvh",
+                  height: '100dvh',
                   backgroundImage: `url(${PLACEHOLDER})`,
                   aspectRatio: 11 / 16,
-                  maxWidth: "100vw",
+                  maxWidth: '100vw',
                 }}
                 className="flex object-contain flex-col gap-4 justify-center items-center w-auto max-w-full h-screen max-h-full text-black sm:text-2xl md:gap-8 md:text-4xl"
               >
@@ -84,7 +84,7 @@ export default async function Page({
         const { src, alt, width, height, base64 } = panel;
         const fullWidth = width > height;
         const rowClass = clsx(baseRowClass, {
-          "md:basis-1/3 flex-grow": !fullWidth,
+          'md:basis-1/3 flex-grow': !fullWidth,
         });
         return (
           <div key={src} className={rowClass}>
@@ -96,13 +96,13 @@ export default async function Page({
               width={width}
               height={1600}
               style={{
-                height: "100dvh",
+                height: '100dvh',
                 aspectRatio: width / height,
-                backgroundSize: "unset",
+                backgroundSize: 'unset',
               }}
               className={clsx(
-                "object-contain w-auto max-w-full h-screen max-h-full",
-                styles.backgroundContain
+                'object-contain w-auto max-w-full h-screen max-h-full',
+                styles.backgroundContain,
               )}
             />
           </div>

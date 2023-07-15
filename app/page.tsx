@@ -1,5 +1,5 @@
-import { getMangas } from "@/lib/chapters";
-import Image from "next/image";
+import { getMangas } from '@/lib/chapters';
+import Image from 'next/image';
 
 export const revalidate = false;
 
@@ -9,7 +9,7 @@ export async function generateStaticParams() {
 }
 
 export const metadata = {
-  title: "Manga Chapters",
+  title: 'Manga Chapters',
 };
 
 export default async function Page() {
@@ -30,7 +30,7 @@ export default async function Page() {
               width={300}
               height={300}
               alt={manga.title}
-            />{" "}
+            />{' '}
             <span className="font-bold">{manga.title}</span>
           </a>
         ))}

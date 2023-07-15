@@ -1,24 +1,24 @@
 module.exports = {
   extends: [
-    "next/core-web-vitals",
-    "plugin:@typescript-eslint/recommended-type-checked",
-    "plugin:@typescript-eslint/stylistic-type-checked",
+    'next/core-web-vitals',
+    'plugin:@typescript-eslint/recommended-type-checked',
+    'plugin:@typescript-eslint/stylistic-type-checked',
   ],
-  plugins: ["@typescript-eslint"],
-  parser: "@typescript-eslint/parser",
+  plugins: ['@typescript-eslint'],
+  parser: '@typescript-eslint/parser',
   parserOptions: {
-    parser: "@typescript-eslint/parser",
+    parser: '@typescript-eslint/parser',
 
     tsconfigRootDir: __dirname,
     project: true,
   },
   rules: {
-    "@typescript-eslint/consistent-type-imports": [
-      "error",
+    '@typescript-eslint/consistent-type-imports': [
+      'error',
       {
-        prefer: "type-imports",
+        prefer: 'type-imports',
         disallowTypeAnnotations: true,
-        fixStyle: "separate-type-imports",
+        fixStyle: 'separate-type-imports',
       },
     ],
   },

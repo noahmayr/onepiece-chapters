@@ -1,6 +1,6 @@
-import { getChapters, getMangas } from "@/lib/chapters";
-import { notFound } from "next/navigation";
-import type { Metadata, ResolvingMetadata } from "next/types";
+import { getChapters, getMangas } from '@/lib/chapters';
+import { notFound } from 'next/navigation';
+import type { Metadata, ResolvingMetadata } from 'next/types';
 
 export const dynamicParams = true;
 export const revalidate = false;
@@ -18,7 +18,7 @@ interface PageProps {
 
 export async function generateMetadata(
   { params: { manga: mangaSlug } }: PageProps,
-  parent: ResolvingMetadata
+  parent: ResolvingMetadata,
 ): Promise<Metadata> {
   const manga = (await getMangas()).find((manga) => manga.slug === mangaSlug);
   if (manga === undefined) {

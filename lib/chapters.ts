@@ -1,8 +1,8 @@
-import { JSDOM } from "jsdom";
-import { cache } from "react";
-import slugify from "slugify";
-import { kv } from "@vercel/kv";
-import { getPlaiceholder } from "plaiceholder";
+import { JSDOM } from 'jsdom';
+import { cache } from 'react';
+import slugify from 'slugify';
+import { kv } from '@vercel/kv';
+import { getPlaiceholder } from 'plaiceholder';
 
 export interface IndexChapter {
   id: string;
@@ -17,8 +17,8 @@ export interface Manga {
   image: string;
 }
 
-const TCB_HOST = "https://tcbscans.com/";
-const MANGAS_ENDPOINT = "/projects";
+const TCB_HOST = 'https://tcbscans.com/';
+const MANGAS_ENDPOINT = '/projects';
 
 export const isDefined = <T>(it: T | undefined | null): it is T => it != null;
 
@@ -34,15 +34,15 @@ export const getMangas = cache(async (): Promise<Manga[]> => {
   }
 
   const mangaElements = Array.from(
-    document.querySelectorAll<HTMLAnchorElement>('a[href^="/mangas"]')
+    document.querySelectorAll<HTMLAnchorElement>('a[href^="/mangas"]'),
   ).reduce<Map<string, MangaElements>>((mangaElements, element) => {
-    const path = new URL(element.href, "https://localhost").pathname;
+    const path = new URL(element.href, 'https://localhost').pathname;
     const partialData: MangaElements = mangaElements.get(path) ?? {};
     if (!element.children.length) {
       partialData.title ??= element.innerHTML;
     } else {
       partialData.image ??=
-        element.getElementsByTagName("img").item(0)?.src ?? undefined;
+        element.getElementsByTagName('img').item(0)?.src ?? undefined;
     }
 
     mangaElements.set(path, partialData);
@@ -55,7 +55,7 @@ export const getMangas = cache(async (): Promise<Manga[]> => {
         return undefined;
       }
       return {
-        slug: slugify(title.toLowerCase()).replace(":", "-"),
+        slug: slugify(title.toLowerCase()).replace(':', '-'),
         title,
         path,
         image,
@@ -77,22 +77,22 @@ export const getChapters = cache(
     } = new JSDOM(await html.text());
 
     const chapterElements = Array.from(
-      document.querySelectorAll<HTMLAnchorElement>('a[href^="/chapters"]')
+      document.querySelectorAll<HTMLAnchorElement>('a[href^="/chapters"]'),
     );
     return chapterElements
       .map(({ href, children }) => {
         const [chapter, title] = Array.from(children).map(
-          (div) => div.innerHTML
+          (div) => div.innerHTML,
         );
-        const path = new URL(href, "https://localhost").pathname;
+        const path = new URL(href, 'https://localhost').pathname;
         return {
-          id: chapter.replace(/.*?(\d+)/, "$1"),
+          id: chapter.replace(/.*?(\d+)/, '$1'),
           title,
           path,
         };
       })
       .sort((a, b) => parseInt(b.id) - parseInt(a.id));
-  }
+  },
 );
 
 export interface Panel {
@@ -116,7 +116,7 @@ export interface DetailChapter extends IndexChapter {
 
 const awaitInBatches = async <T>(
   promises: Promise<T>[],
-  batchSize = 6
+  batchSize = 6,
 ): Promise<T[]> => {
   const result: T[] = [];
   let batch: Promise<T>[] = [];
@@ -135,7 +135,7 @@ const getPanelData = cache(
   async (src: string, alt: string): Promise<Panel | MissingPanel> => {
     try {
       const buffer = await fetch(src).then(async (res) =>
-        Buffer.from(await res.arrayBuffer())
+        Buffer.from(await res.arrayBuffer()),
       );
 
       const {
@@ -150,13 +150,13 @@ const getPanelData = cache(
         alt,
       };
     }
-  }
+  },
 );
 
 export const getChapter = cache(
   async (mangaSlug: string, id: string): Promise<DetailChapter | undefined> => {
     const chapter = (await getChapters(mangaSlug))?.find(
-      (chapter) => chapter.id === id
+      (chapter) => chapter.id === id,
     );
     if (chapter === undefined) {
       return undefined;
@@ -171,13 +171,13 @@ export const getChapter = cache(
       window: { document },
     } = new JSDOM(await html.text());
     const imageElements = Array.from(
-      document.querySelectorAll<HTMLImageElement>("img.fixed-ratio-content")
+      document.querySelectorAll<HTMLImageElement>('img.fixed-ratio-content'),
     );
     const panels: (Panel | MissingPanel)[] = await awaitInBatches(
-      imageElements.map(async ({ src, alt }) => await getPanelData(src, alt))
+      imageElements.map(async ({ src, alt }) => await getPanelData(src, alt)),
     );
     const result: DetailChapter = { ...chapter, panels: panels };
     await kv.hset(mangaSlug, { [id]: result });
     return result;
-  }
+  },
 );
