@@ -8,7 +8,6 @@ export interface IndexChapter {
   id: string;
   title: string;
   path: string;
-  manga: Manga;
 }
 
 export interface Manga {
@@ -16,6 +15,10 @@ export interface Manga {
   title: string;
   path: string;
   image: string;
+}
+
+export interface MangaDetail extends Manga {
+  chapters: IndexChapter[];
 }
 
 const TCB_HOST = 'https://tcbscans.com/';
@@ -65,8 +68,8 @@ export const getMangas = cache(async (): Promise<Manga[]> => {
     .filter(isDefined);
 });
 
-export const getChapters = cache(
-  async (mangaSlug: string): Promise<IndexChapter[] | undefined> => {
+export const getMangaDetail = cache(
+  async (mangaSlug: string): Promise<MangaDetail | undefined> => {
     const manga = (await getMangas()).find((manga) => manga.slug === mangaSlug);
     if (manga === undefined) {
       return undefined;
@@ -80,16 +83,20 @@ export const getChapters = cache(
     const chapterElements = Array.from(
       document.querySelectorAll<HTMLAnchorElement>('a[href^="/chapters"]'),
     );
-    return chapterElements.map(({ href, children }) => {
-      const [chapter, title] = Array.from(children).map((div) => div.innerHTML);
-      const path = new URL(href, 'https://localhost').pathname;
-      return {
-        id: chapter.replace(/.*?(\d+)/, '$1'),
-        title,
-        path,
-        manga,
-      };
-    });
+    return {
+      ...manga,
+      chapters: chapterElements.map(({ href, children }) => {
+        const [chapter, title] = Array.from(children).map(
+          (div) => div.innerHTML,
+        );
+        const path = new URL(href, 'https://localhost').pathname;
+        return {
+          id: chapter.replace(/.*?(\d+)/, '$1'),
+          title,
+          path,
+        };
+      }),
+    };
   },
 );
 
@@ -110,6 +117,7 @@ export interface MissingPanel {
 
 export interface DetailChapter extends IndexChapter {
   panels: (Panel | MissingPanel)[];
+  manga: Manga;
 }
 
 const mapInBatches = async <T, R>(
@@ -160,9 +168,13 @@ export const getChapter = cache(
       return cached;
     }
 
-    const chapter = (await getChapters(mangaSlug))?.find(
-      (chapter) => chapter.id === id,
-    );
+    const { chapters, ...manga } =
+      (await getMangaDetail(mangaSlug)) ?? ({} as MangaDetail);
+    if (manga === undefined) {
+      return undefined;
+    }
+
+    const chapter = chapters?.find((chapter) => chapter.id === id);
     if (chapter === undefined) {
       return undefined;
     }
@@ -180,7 +192,11 @@ export const getChapter = cache(
       async ({ src, alt }) => await getPanelData(src, alt),
     );
 
-    const result: DetailChapter = { ...chapter, panels: panels };
+    const result: DetailChapter = {
+      manga,
+      ...chapter,
+      panels: panels,
+    };
 
     await kv.hset(mangaSlug, { [id]: result });
     return result;

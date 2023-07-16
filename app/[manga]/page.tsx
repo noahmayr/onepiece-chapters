@@ -1,4 +1,5 @@
-import { getChapters, getMangas } from '@/lib/chapters';
+import { getMangaDetail as getManga, getMangas } from '@/lib/chapters';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata, ResolvingMetadata } from 'next/types';
 
@@ -35,26 +36,31 @@ export async function generateMetadata(
   };
 }
 
-export default async function Page({ params: { manga } }: PageProps) {
-  const chapters = await getChapters(manga);
-  if (chapters === undefined) {
+export default async function Page({
+  params: { manga: mangaSlug },
+}: PageProps) {
+  const manga = await getManga(mangaSlug);
+  if (manga === undefined) {
     notFound();
   }
 
-  console.log(`rendering /${manga}`);
+  console.log(`rendering /${mangaSlug}`);
   return (
-    <div>
-      <h1 className="mb-4 text-2xl">One Piece Chapters</h1>
-      <div className="flex flex-col gap-4">
-        {chapters.map((chapter) => (
-          <a
-            className="flex flex-col gap-1"
+    <div className="max-w-screen-xl mx-auto">
+      <div className="flex gap-4 mb-12 items-end">
+        <h1 className="text-2xl">{manga.title} Chapters</h1>
+        <Link href="/">Back</Link>
+      </div>
+      <div className="flex flex-col gap-6">
+        {manga.chapters.map((chapter) => (
+          <Link
+            className="flex flex-row gap-2"
             key={chapter.id}
-            href={`${manga}/${chapter.id}`}
+            href={`${mangaSlug}/${chapter.id}`}
           >
             <span className="font-bold">{chapter.id}</span>
             <span>{chapter.title}</span>
-          </a>
+          </Link>
         ))}
       </div>
     </div>

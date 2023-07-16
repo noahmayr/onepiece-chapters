@@ -1,4 +1,9 @@
-import { getChapter, getChapters, getMangas, isDefined } from '@/lib/chapters';
+import {
+  getChapter,
+  getMangaDetail,
+  getMangas,
+  isDefined,
+} from '@/lib/chapters';
 import clsx from 'clsx';
 import type { Metadata, ResolvingMetadata } from 'next';
 import Image from 'next/image';
@@ -6,16 +11,16 @@ import { notFound } from 'next/navigation';
 import styles from './styles.module.css';
 
 export const dynamic = 'force-static';
-export const dynamicParams = true;
+export const dynamicParams = false;
 export const revalidate = false;
 
 export async function generateStaticParams() {
   const mangas = await getMangas();
   const paramsPerManga = await Promise.all(
-    mangas.map(async (manga) => {
-      const chapters = await getChapters(manga.slug);
-      return chapters
-        ?.slice(0, 2)
+    mangas.map(async ({ slug }) => {
+      const manga = await getMangaDetail(slug);
+      return manga?.chapters
+        .slice(0, 2)
         .map((chapter) => ({ manga: manga.slug, chapter: chapter.id }));
     }),
   );
@@ -68,7 +73,7 @@ export default async function Page({
           'max-h-screen flex justify-center basis-auto max-h-full';
         if (panel.missing) {
           return (
-            <div key={panel.src} className={clsx(baseRowClass, 'basis-1/2')}>
+            <div key={panel.src} className={clsx(baseRowClass, 'basis-2/5')}>
               <div
                 style={{
                   height: '100dvh',
@@ -87,7 +92,7 @@ export default async function Page({
         const { src, alt, width, height, base64 } = panel;
         const fullWidth = width > height;
         const rowClass = clsx(baseRowClass, {
-          'md:basis-1/3 flex-grow': !fullWidth,
+          'md:basis-2/5 flex-grow': !fullWidth,
         });
         return (
           <div key={src} className={rowClass}>
