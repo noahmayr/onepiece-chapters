@@ -24,11 +24,12 @@ export const getChapterDetail = cache(
     chapterKey: string,
   ): Promise<
     | (Chapter & {
-      panels: Omit<Panel, 'id' | 'chapterId'>[];
-      manga: Manga;
-      prev?: Chapter;
-      next?: Chapter;
-    }) | null
+        panels: Omit<Panel, 'id' | 'chapterId'>[];
+        manga: Manga;
+        prev?: Chapter;
+        next?: Chapter;
+      })
+    | null
   > => {
     const chapter = await db.chapter.findFirst({
       where: { key: chapterKey, manga: { key: mangaKey } },

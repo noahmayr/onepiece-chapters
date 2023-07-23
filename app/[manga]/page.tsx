@@ -1,4 +1,4 @@
-import { getMangaDetail as getManga, getMangaListing } from '@/lib/data';
+import { getMangaListing } from '@/lib/data';
 import db from '@/lib/db';
 import { indexChapters, loadMangasFromTcb } from '@/lib/tcb';
 import type { Chapter, Manga } from '@prisma/client';

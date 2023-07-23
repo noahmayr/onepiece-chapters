@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { getChapterDetail, getMangaListing } from '@/lib/data';
 import db from '@/lib/db';
-import type { Chapter, Panel } from '@prisma/client';
+import type { Panel } from '@prisma/client';
 import clsx from 'clsx';
 import type { Metadata, ResolvingMetadata } from 'next';
 import Link from 'next/link';
@@ -144,18 +144,24 @@ export default async function Page({
     <div>
       <div className="max-w-screen-xl mx-auto flex justify-between pb-8">
         <span>
-          {chapter.prev
-            ? (<Link href={`/${chapter.manga.key}/${chapter.prev.key}`}>Previous Chapter</Link>)
-            : (<span className='text-gray-400'>Previous Chapter</span>)
-          }
+          {chapter.prev ? (
+            <Link href={`/${chapter.manga.key}/${chapter.prev.key}`}>
+              Previous Chapter
+            </Link>
+          ) : (
+            <span className="text-gray-400">Previous Chapter</span>
+          )}
         </span>
 
         <Link href={`/${chapter.manga.key}`}>Back to Chapters</Link>
         <span>
-          {chapter.next
-            ? (<Link href={`/${chapter.manga.key}/${chapter.next.key}`}>Next Chapter</Link>)
-            : (<span className='text-gray-400'>Next Chapter</span>)
-          }
+          {chapter.next ? (
+            <Link href={`/${chapter.manga.key}/${chapter.next.key}`}>
+              Next Chapter
+            </Link>
+          ) : (
+            <span className="text-gray-400">Next Chapter</span>
+          )}
         </span>
       </div>
       <div className="flex flex-row-reverse flex-wrap gap-x-4 gap-y-8 justify-center md:gap-y-24">
