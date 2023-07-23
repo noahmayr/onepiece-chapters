@@ -7,7 +7,7 @@ import type { Metadata, ResolvingMetadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-export const dynamic = 'auto';
+export const dynamic = 'force-static';
 export const dynamicParams = true;
 export const revalidate = false;
 
