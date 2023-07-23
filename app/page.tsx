@@ -1,11 +1,11 @@
-import { getMangas } from '@/lib/chapters';
+import { getMangaListing } from '@/lib/data';
 import Image from 'next/image';
 
 export const revalidate = false;
 
 export async function generateStaticParams() {
-  const mangas = await getMangas();
-  return mangas.map((manga) => ({ manga: manga.slug }));
+  const mangas = await getMangaListing();
+  return mangas.map((manga) => ({ manga: manga.key }));
 }
 
 export const metadata = {
@@ -13,7 +13,7 @@ export const metadata = {
 };
 
 export default async function Page() {
-  const mangas = await getMangas();
+  const mangas = await getMangaListing();
 
   return (
     <div>
@@ -22,8 +22,8 @@ export default async function Page() {
         {mangas.map((manga) => (
           <a
             className="flex flex-row gap-8 items-center"
-            key={manga.slug}
-            href={manga.slug}
+            key={manga.key}
+            href={manga.key}
           >
             <Image
               src={manga.image}

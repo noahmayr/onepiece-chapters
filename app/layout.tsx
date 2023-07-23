@@ -8,6 +8,11 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'One Piece Chapters',
   description: 'Sourced from tcbscans.com',
+  metadataBase: new URL(
+    process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : `http://localhost:${process.env.PORT ?? 3000}`,
+  ),
 };
 
 export default function RootLayout({
@@ -17,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={clsx(inter.className, 'mt-16')}>{children}</body>
+      <body className={clsx(inter.className, 'mt-8')}>{children}</body>
     </html>
   );
 }
