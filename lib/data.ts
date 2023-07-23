@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import type { Manga } from '@prisma/client';
+import type { Chapter, Manga, Panel } from '@prisma/client';
 import db from './db';
 import { analyzePanels, loadPanels } from './tcb';
 
@@ -19,7 +19,17 @@ export const getMangaDetail = cache(async (mangaSlug: string) => {
 });
 
 export const getChapterDetail = cache(
-  async (mangaKey: string, chapterKey: string) => {
+  async (
+    mangaKey: string,
+    chapterKey: string,
+  ): Promise<
+    | (Chapter & {
+      panels: Omit<Panel, 'id' | 'chapterId'>[];
+      manga: Manga;
+      prev?: Chapter;
+      next?: Chapter;
+    }) | null
+  > => {
     const chapter = await db.chapter.findFirst({
       where: { key: chapterKey, manga: { key: mangaKey } },
       include: {
@@ -31,9 +41,23 @@ export const getChapterDetail = cache(
         manga: true,
       },
     });
+
     if (!chapter) {
       return chapter;
     }
+    const { prev, next } = (
+      await db.chapter.findMany({
+        where: { sort: { in: [chapter.sort - 1, chapter.sort + 1] } },
+      })
+    ).reduce<{ prev?: Chapter; next?: Chapter }>((neighbors, neighbor) => {
+      if (neighbor.sort < chapter.sort) {
+        neighbors.prev = neighbor;
+      }
+      if (neighbor.sort > chapter.sort) {
+        neighbors.next = neighbor;
+      }
+      return neighbors;
+    }, {});
     const actualPanels = await loadPanels(chapter);
     if (actualPanels.length > chapter.panels.length) {
       const indexed = new Set(chapter.panels.map((panel) => panel.src));
@@ -59,9 +83,11 @@ export const getChapterDetail = cache(
         panels: [...chapter.panels, ...analyzed].sort(
           (a, b) => a.sort - b.sort,
         ),
+        prev,
+        next,
       };
     }
 
-    return chapter;
+    return { ...chapter, prev, next };
   },
 );

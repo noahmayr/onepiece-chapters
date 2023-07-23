@@ -143,9 +143,20 @@ export default async function Page({
   return (
     <div>
       <div className="max-w-screen-xl mx-auto flex justify-between pb-8">
-        <Link href={`/${chapter.manga.key}`}>Previous Chapter</Link>
+        <span>
+          {chapter.prev
+            ? (<Link href={`/${chapter.manga.key}/${chapter.prev.key}`}>Previous Chapter</Link>)
+            : (<span className='text-gray-400'>Previous Chapter</span>)
+          }
+        </span>
+
         <Link href={`/${chapter.manga.key}`}>Back to Chapters</Link>
-        <Link href={`/${chapter.manga.key}`}>Next Chapter</Link>
+        <span>
+          {chapter.next
+            ? (<Link href={`/${chapter.manga.key}/${chapter.next.key}`}>Next Chapter</Link>)
+            : (<span className='text-gray-400'>Next Chapter</span>)
+          }
+        </span>
       </div>
       <div className="flex flex-row-reverse flex-wrap gap-x-4 gap-y-8 justify-center md:gap-y-24">
         <PanelComponent panels={chapter.panels}></PanelComponent>
