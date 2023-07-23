@@ -48,7 +48,12 @@ export const getChapterDetail = cache(
     }
     const { prev, next } = (
       await db.chapter.findMany({
-        where: { sort: { in: [chapter.sort - 1, chapter.sort + 1] } },
+        where: {
+          sort: {
+            in: [chapter.sort - 1, chapter.sort + 1],
+          },
+          manga: { key: mangaKey },
+        },
       })
     ).reduce<{ prev?: Chapter; next?: Chapter }>((neighbors, neighbor) => {
       if (neighbor.sort < chapter.sort) {
