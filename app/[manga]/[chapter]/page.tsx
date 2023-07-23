@@ -54,7 +54,7 @@ export async function generateMetadata(
   { params: { manga: mangaSlug, chapter: id } }: PageProps,
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
-  const chapter = await getChapterDetail(mangaSlug, id);
+  const chapter = await getChapterDetail(mangaSlug, id, false);
   const resolvedMetadata = (await parent) as Metadata;
   if (!chapter) {
     return resolvedMetadata ?? {};

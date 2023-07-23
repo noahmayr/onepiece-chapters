@@ -22,6 +22,7 @@ export const getChapterDetail = cache(
   async (
     mangaKey: string,
     chapterKey: string,
+    analyze: boolean,
   ): Promise<
     | (Chapter & {
         panels: Omit<Panel, 'id' | 'chapterId'>[];
@@ -68,6 +69,16 @@ export const getChapterDetail = cache(
     if (actualPanels.length > chapter.panels.length) {
       const indexed = new Set(chapter.panels.map((panel) => panel.src));
       const toIndex = actualPanels.filter((panel) => !indexed.has(panel.src));
+      if (!analyze) {
+        return {
+          ...chapter,
+          panels: [...chapter.panels, ...toIndex].sort(
+            (a, b) => a.sort - b.sort,
+          ) as Panel[],
+          prev,
+          next,
+        };
+      }
       const analyzed = (await analyzePanels(toIndex)).map((panel) => ({
         ...panel,
         chapterId: chapter.id,
