@@ -1,16 +1,37 @@
-import { getChapters } from "@/lib/chapters";
+import { getMangaListing } from '@/lib/data';
+import Image from 'next/image';
 
-export default async function Home() {
-  const chapters = await getChapters();
+export const revalidate = false;
+
+export async function generateStaticParams() {
+  const mangas = await getMangaListing();
+  return mangas.map((manga) => ({ manga: manga.key }));
+}
+
+export const metadata = {
+  title: 'Manga Chapters',
+};
+
+export default async function Page() {
+  const mangas = await getMangaListing();
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl">One Piece Chapters</h1>
-      <div className="flex flex-col gap-4">
-        {chapters.map((chapter) => (
-          <a className="flex flex-col gap-1" key={chapter.id} href={chapter.id}>
-            <span className="font-bold">{chapter.id}</span>
-            <span>{chapter.title}</span>
+      <h1 className="mb-4 text-2xl">Mangas</h1>
+      <div className="flex flex-col gap-16">
+        {mangas.map((manga) => (
+          <a
+            className="flex flex-row gap-8 items-center"
+            key={manga.key}
+            href={manga.key}
+          >
+            <Image
+              src={manga.image}
+              width={300}
+              height={300}
+              alt={manga.title}
+            />{' '}
+            <span className="font-bold">{manga.title}</span>
           </a>
         ))}
       </div>

@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model Panel {
+  id          Int     @id @default(autoincrement())
+  sort        Int
+  src         String  @unique @db.VarChar(768)
+  title       String  @db.TinyText
+  width       Int
+  height      Int
+  blurDataUrl String  @map("base64") @db.Text
+  chapter     Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chapterId   Int
+
+  @@unique([chapterId, sort])
+  @@index([chapterId])
+  @@index([src])
+  @@map("panel")
+}
+
+model Chapter {
+  id      Int     @id @default(autoincrement())
+  sort    Int
+  title   String
+  path    String  @unique
+  key     String
+  panels  Panel[]
+  manga   Manga   @relation(fields: [mangaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  mangaId Int
+
+  @@unique([key, mangaId])
+  @@unique([sort, mangaId])
+  @@index([mangaId])
+  @@index([key, mangaId])
+  @@map("chapter")
+}
+
+model Manga {
+  id       Int       @id @default(autoincrement())
+  key      String    @unique
+  path     String    @unique
+  title    String
+  image    String
+  chapters Chapter[]
+
+  @@index([key])
+  @@map("manga")
+}
