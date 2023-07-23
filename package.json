@@ -12,7 +12,8 @@
     "check:types": "tsc --noEmit",
     "prisma:echo": "dotenv -e .env.local -- pnpm echo",
     "echo": "echo $DATABASE_URL",
-    "prisma": "dotenv -e .env.local -- prisma"
+    "prisma": "dotenv -e .env.local -- prisma",
+    "postinstall": "pnpm prisma generate"
   },
   "dependencies": {
     "@plaiceholder/next": "^3.0.0",
