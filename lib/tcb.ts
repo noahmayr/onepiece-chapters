@@ -149,11 +149,13 @@ export const analyzePanels = cache(
   ): Promise<Omit<Panel, 'id' | 'chapterId'>[]> => {
     return (
       await mapConcurrently(panels, async (panel) => {
+        console.log(`loading "${panel.title}": ${panel.src}`);
         const response = await fetch(panel.src);
         if (response.status !== 200) {
           console.error(`got status 404 for "${panel.title}": ${panel.src}`);
           return undefined;
         }
+
         const buffer = Buffer.from(await response.arrayBuffer());
         const {
           base64: blurDataUrl,

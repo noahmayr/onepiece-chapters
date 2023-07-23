@@ -1,26 +1,34 @@
 export const isDefined = <T>(it: T | undefined | null): it is T => it != null;
 
-export const mapConcurrently = <T, R>(
+export type Task<T> = () => T;
+export type Future<T> = () => Promise<T>;
+
+const concurrency = 12;
+const pool = new Set<Promise<unknown>>();
+
+export const mapConcurrently = async <T, R>(
   items: T[],
   predicate: (item: T, index: number) => R | Promise<R>,
-  concurrency = 4,
+  // concurrency = 12,
 ): Promise<R[]> => {
-  const batch: Promise<R>[] = [];
-  let previous: Promise<unknown> = Promise.resolve();
-  return Promise.all(
-    items.map((item: T, index: number): Promise<R> => {
-      if (batch.length >= concurrency) {
-        previous = Promise.all(batch);
-      }
-
-      const future = async (): Promise<R> => {
-        await previous;
-        return await predicate(item, index);
-      };
-
-      const result = future();
-      batch.push(result);
-      return result;
-    }),
-  );
+  const result: R[] = [];
+  // const pool = new Set<Promise<R>>();
+  const jobs = items.map((item: T, index: number): Future<R> => {
+    return async () => {
+      return await predicate(item, index);
+    };
+  });
+  let job: Future<R> | undefined;
+  while ((job = jobs.pop())) {
+    if (pool.size < concurrency) {
+      const promise = job();
+      pool.add(promise);
+      promise
+        .then((value) => result.push(value))
+        .finally(() => pool.delete(promise));
+    } else {
+      await Promise.race(pool);
+    }
+  }
+  return result;
 };
