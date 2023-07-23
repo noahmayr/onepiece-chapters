@@ -22,7 +22,7 @@ export const getChapterDetail = cache(
   async (
     mangaKey: string,
     chapterKey: string,
-    analyze: boolean,
+    analyze = true,
   ): Promise<
     | (Chapter & {
         panels: Omit<Panel, 'id' | 'chapterId'>[];
