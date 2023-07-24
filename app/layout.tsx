@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import Provider from '@/lib/provider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -22,7 +23,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={clsx(inter.className, 'mt-8')}>{children}</body>
+      <body className={clsx(inter.className, 'mt-8')}>
+        <Provider>{children}</Provider>
+      </body>
     </html>
   );
 }

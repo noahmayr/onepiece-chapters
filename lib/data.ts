@@ -18,14 +18,36 @@ export const getMangaDetail = cache(async (mangaSlug: string) => {
   });
 });
 
+const getNeighbors = async (mangaKey: string, sort: number) => {
+  const data = await db.chapter.findMany({
+    where: {
+      sort: {
+        in: [sort - 1, sort + 1],
+      },
+      manga: { key: mangaKey },
+    },
+  });
+  return data.reduce<{ prev?: Chapter; next?: Chapter }>(
+    (neighbors, neighbor) => {
+      if (neighbor.sort < sort) {
+        neighbors.prev = neighbor;
+      }
+      if (neighbor.sort > sort) {
+        neighbors.next = neighbor;
+      }
+      return neighbors;
+    },
+    {},
+  );
+};
+
 export const getChapterDetail = cache(
   async (
     mangaKey: string,
     chapterKey: string,
-    analyze = true,
   ): Promise<
     | (Chapter & {
-        panels: Omit<Panel, 'id' | 'chapterId'>[];
+        panels: Panel[];
         manga: Manga;
         prev?: Chapter;
         next?: Chapter;
@@ -47,64 +69,51 @@ export const getChapterDetail = cache(
     if (!chapter) {
       return chapter;
     }
-    const { prev, next } = (
-      await db.chapter.findMany({
-        where: {
-          sort: {
-            in: [chapter.sort - 1, chapter.sort + 1],
-          },
-          manga: { key: mangaKey },
-        },
-      })
-    ).reduce<{ prev?: Chapter; next?: Chapter }>((neighbors, neighbor) => {
-      if (neighbor.sort < chapter.sort) {
-        neighbors.prev = neighbor;
-      }
-      if (neighbor.sort > chapter.sort) {
-        neighbors.next = neighbor;
-      }
-      return neighbors;
-    }, {});
-    const actualPanels = await loadPanels(chapter);
-    if (actualPanels.length > chapter.panels.length) {
-      const indexed = new Set(chapter.panels.map((panel) => panel.src));
-      const toIndex = actualPanels.filter((panel) => !indexed.has(panel.src));
-      if (!analyze) {
-        return {
-          ...chapter,
-          panels: [...chapter.panels, ...toIndex].sort(
-            (a, b) => a.sort - b.sort,
-          ) as Panel[],
-          prev,
-          next,
-        };
-      }
-      const analyzed = (await analyzePanels(toIndex)).map((panel) => ({
-        ...panel,
-        chapterId: chapter.id,
-      }));
 
-      try {
-        await db.panel.createMany({ data: analyzed });
-      } catch (e) {
-        console.error(
-          `error during create many for ${mangaKey}/${chapterKey}`,
-          analyzed,
-        );
-        throw new Error(
-          `error during create many for ${mangaKey}/${chapterKey}`,
-        );
-      }
-      return {
-        ...chapter,
-        panels: [...chapter.panels, ...analyzed].sort(
-          (a, b) => a.sort - b.sort,
-        ),
-        prev,
-        next,
-      };
-    }
+    const [{ prev, next }, { panels }] = await Promise.all([
+      getNeighbors(mangaKey, chapter.sort),
+      loadPanels(chapter),
+    ]);
 
-    return { ...chapter, prev, next };
+    // if (actualPanels.length > chapter.panels.length) {
+    //   const indexed = new Set(chapter.panels.map((panel) => panel.src));
+    //   const toIndex = actualPanels.filter((panel) => !indexed.has(panel.src));
+    //   if (!analyze) {
+    //     return {
+    //       ...chapter,
+    //       panels: [...chapter.panels, ...toIndex].sort(
+    //         (a, b) => a.sort - b.sort,
+    //       ) as Panel[],
+    //       prev,
+    //       next,
+    //     };
+    //   }
+    //   const analyzed = (await analyzePanels(toIndex)).map((panel) => ({
+    //     ...panel,
+    //     chapterId: chapter.id,
+    //   }));
+    //
+    //   try {
+    //     await db.panel.createMany({ data: analyzed });
+    //   } catch (e) {
+    //     console.error(
+    //       `error during create many for ${mangaKey}/${chapterKey}`,
+    //       analyzed,
+    //     );
+    //     throw new Error(
+    //       `error during create many for ${mangaKey}/${chapterKey}`,
+    //     );
+    //   }
+    //   return {
+    //     ...chapter,
+    //     panels: [...chapter.panels, ...analyzed].sort(
+    //       (a, b) => a.sort - b.sort,
+    //     ),
+    //     prev,
+    //     next,
+    //   };
+    // }
+
+    return { ...chapter, panels, prev, next };
   },
 );

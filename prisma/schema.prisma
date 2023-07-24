@@ -16,9 +16,10 @@ model Panel {
   sort        Int
   src         String  @unique @db.VarChar(768)
   title       String  @db.TinyText
-  width       Int
-  height      Int
-  blurDataUrl String  @map("base64") @db.Text
+  missing     Boolean @default(false)
+  width       Int?
+  height      Int?
+  blurDataUrl String? @map("base64") @db.Text
   chapter     Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chapterId   Int
 

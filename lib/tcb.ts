@@ -5,6 +5,7 @@ import type { Chapter, Manga, Panel } from '@prisma/client';
 import { getPlaiceholder } from 'plaiceholder';
 import db from './db';
 import { isDefined, mapConcurrently } from './util';
+import type { SetOptional } from 'type-fest';
 
 const TCB_HOST = 'https://tcbscans.com/';
 const MANGAS_ENDPOINT = '/projects';
@@ -122,9 +123,9 @@ export const loadChapters = cache(async (manga: Pick<Manga, 'path'>) => {
 });
 
 export const loadPanels = cache(
-  async (
-    chapter: Pick<Chapter, 'path'>,
-  ): Promise<Pick<Panel, 'src' | 'title' | 'sort'>[]> => {
+  async <T extends Chapter & { panels: Panel[] }>(
+    chapter: T,
+  ): Promise<T & { panels: SetOptional<Panel, 'id' | 'chapterId'>[] }> => {
     const html = await fetch(new URL(chapter.path, TCB_HOST));
     const {
       window: { document },
@@ -132,37 +133,103 @@ export const loadPanels = cache(
     const imageElements = Array.from(
       document.querySelectorAll<HTMLImageElement>('img.fixed-ratio-content'),
     );
+    const panelIndex = chapter.panels.reduce<Map<string, Panel>>(
+      (acc, panel) => {
+        acc.set(panel.src, panel);
+        return acc;
+      },
+      new Map(),
+    );
 
-    return imageElements.map(({ src, alt }, sort) => {
-      return {
+    const upsert: Omit<Panel, 'id'>[] = [];
+
+    imageElements.forEach(({ src, alt: title }, sort) => {
+      const dbPanel = panelIndex.get(src);
+      const needsUpsert = dbPanel?.sort !== sort || dbPanel?.title !== title;
+      if (!needsUpsert) {
+        return;
+      }
+
+      upsert.push({
         sort,
         src,
-        title: alt,
-      };
+        title,
+        missing: dbPanel?.missing ?? false,
+        width: dbPanel?.width ?? null,
+        height: dbPanel?.height ?? null,
+        blurDataUrl: dbPanel?.blurDataUrl ?? null,
+        chapterId: chapter.id,
+      });
     });
+
+    if (!upsert.length) {
+      return chapter;
+    }
+
+    await db.$transaction(
+      upsert.map((panel) => {
+        console.log(`upserting ${chapter.key}/${panel.sort}`);
+        return db.panel.upsert({
+          create: panel,
+          update: panel,
+          where: { src: panel.src },
+        });
+      }),
+    );
+
+    const panels = (
+      await db.chapter.findUnique({
+        where: { id: chapter.id },
+        include: { panels: { orderBy: { sort: 'asc' } } },
+      })
+    )?.panels;
+
+    if (!panels) {
+      console.error(
+        `failed to load panels for chapter id ${chapter.id} after updating them. This should not be possible`,
+      );
+      return chapter;
+    }
+
+    return { ...chapter, panels };
   },
 );
 
 export const analyzePanels = cache(
-  async (
-    panels: Pick<Panel, 'src' | 'title' | 'sort'>[],
-  ): Promise<Omit<Panel, 'id' | 'chapterId'>[]> => {
-    return (
-      await mapConcurrently(panels, async (panel) => {
-        console.log(`loading "${panel.title}": ${panel.src}`);
-        const response = await fetch(panel.src);
-        if (response.status !== 200) {
-          console.error(`got status 404 for "${panel.title}": ${panel.src}`);
-          return undefined;
-        }
+  async (panels: Panel[]): Promise<Panel[]> => {
+    const result = await mapConcurrently(panels, async (panel) => {
+      if (panel.missing || (panel.blurDataUrl && panel.width && panel.height)) {
+        console.log(`panel ${panel.id} is missing or analyzed already`);
+        return panel;
+      }
 
-        const buffer = Buffer.from(await response.arrayBuffer());
-        const {
-          base64: blurDataUrl,
-          metadata: { width, height },
-        } = await getPlaiceholder(buffer);
-        return { ...panel, width, height, blurDataUrl };
-      })
-    ).filter(isDefined);
+      console.log(`loading "${panel.title}": ${panel.src}`);
+      const response = await fetch(panel.src);
+      if (response.status !== 200) {
+        return await db.panel.update({
+          data: { ...panel, missing: true },
+          where: { id: panel.id },
+        });
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const {
+        base64: blurDataUrl,
+        metadata: { width, height },
+      } = await getPlaiceholder(buffer);
+      const analyzed = {
+        ...panel,
+        width,
+        height,
+        blurDataUrl,
+        missing: false,
+      };
+      const result = await db.panel.update({
+        data: analyzed,
+        where: { id: panel.id },
+      });
+      return result;
+    });
+    return result.filter(isDefined).sort((a, b) => a.sort - b.sort);
   },
 );
