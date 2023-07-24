@@ -1,11 +1,11 @@
-import { PanelComponent } from '@/lib/components/panel';
+import Header from '@/lib/components/header';
 import { PanelList } from '@/lib/components/panelList';
 import { getChapterDetail, getMangaListing } from '@/lib/data';
 import db from '@/lib/db';
-import type { Chapter } from '@prisma/client';
 import type { Metadata, ResolvingMetadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { MdArrowBack, MdArrowForward } from 'react-icons/md';
 
 export const dynamic = 'force-static';
 export const dynamicParams = true;
@@ -27,14 +27,14 @@ export async function generateStaticParams() {
         },
         orderBy: { sort: 'desc' },
       });
-      // const unanalyzedChapters = await db.chapter.findMany({
-      //   where: { panels: { none: {} }, manga: { key: slug } },
-      //   orderBy: { sort: 'desc' },
-      //   take: 2,
-      // });
-      const unanalyzedChapters: Chapter[] = [];
+      const uncrawledChapters = await db.chapter.findMany({
+        where: { panels: { none: {} }, manga: { key: slug } },
+        orderBy: { sort: 'desc' },
+        // take: 2,
+      });
+      // const unanalyzedChapters: Chapter[] = [];
 
-      return [...chapters, ...unanalyzedChapters].map((chapter) => ({
+      return [...chapters, ...uncrawledChapters].map((chapter) => ({
         manga: slug,
         chapter: chapter.key,
       }));
@@ -78,34 +78,48 @@ export default async function Page({
   }
   return (
     <div>
-      <div className="max-w-screen-xl mx-auto flex justify-between pb-8">
-        <span>
-          {chapter.prev ? (
-            <Link href={`/${chapter.manga.key}/${chapter.prev.key}`}>
-              Previous Chapter
-            </Link>
-          ) : (
-            <span className="text-gray-400">Previous Chapter</span>
-          )}
-        </span>
+      <Header
+        title={`${chapter.manga.title} Chapter ${chapter.key}`}
+        back={`/${chapter.manga.key}`}
+      />
 
-        <Link href={`/${chapter.manga.key}`}>Back to Chapters</Link>
-        <span>
-          {chapter.next ? (
-            <Link href={`/${chapter.manga.key}/${chapter.next.key}`}>
-              Next Chapter
-            </Link>
-          ) : (
-            <span className="text-gray-400">Next Chapter</span>
-          )}
-        </span>
+      <div className="flex flex-row-reverse flex-wrap gap-x-4 gap-y-8 justify-center md:gap-y-24 w-full">
+        <PanelList panels={chapter.panels} />
       </div>
-      <div className="flex flex-row-reverse flex-wrap gap-x-4 gap-y-8 justify-center md:gap-y-24">
-        <PanelList
-          panels={chapter.panels}
-          mangaKey={mangaKey}
-          chapterKey={chapterKey}
-        />
+
+      <div className="grid grid-cols-3 py-8 items-center">
+        {chapter.prev ? (
+          <Link
+            className="flex gap-2 items-center justify-start"
+            href={`/${chapter.manga.key}/${chapter.prev.key}`}
+          >
+            <MdArrowBack size={'2rem'} />
+            <span>
+              {chapter.manga.title} Chapter {chapter.prev.key}
+            </span>
+          </Link>
+        ) : (
+          <span />
+        )}
+
+        <Link className="flex justify-center" href={`/${chapter.manga.key}`}>
+          View all Chapters
+        </Link>
+        {chapter.next ? (
+          <Link
+            className="flex gap-2 items-center justify-end"
+            href={`/${chapter.manga.key}/${chapter.next.key}`}
+          >
+            <span>
+              {chapter.manga.title} Chapter {chapter.next.key}
+            </span>
+            <div>
+              <MdArrowForward size={'2rem'} />
+            </div>
+          </Link>
+        ) : (
+          <span />
+        )}
       </div>
     </div>
   );

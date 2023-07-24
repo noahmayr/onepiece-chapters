@@ -1,5 +1,6 @@
+import Card from '@/lib/components/card';
+import Header from '@/lib/components/header';
 import { getMangaListing } from '@/lib/data';
-import Image from 'next/image';
 
 export const revalidate = false;
 
@@ -17,22 +18,15 @@ export default async function Page() {
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl">Mangas</h1>
-      <div className="flex flex-col gap-16">
+      <Header title={`Mangas`} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
         {mangas.map((manga) => (
-          <a
-            className="flex flex-row gap-8 items-center"
+          <Card
             key={manga.key}
-            href={manga.key}
-          >
-            <Image
-              src={manga.image}
-              width={300}
-              height={300}
-              alt={manga.title}
-            />{' '}
-            <span className="font-bold">{manga.title}</span>
-          </a>
+            href={`/${manga.key}`}
+            title={manga.title}
+            image={{ src: manga.image, width: 300, height: 200 }}
+          ></Card>
         ))}
       </div>
     </div>

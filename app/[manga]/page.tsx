@@ -1,8 +1,9 @@
+import Card from '@/lib/components/card';
+import Header from '@/lib/components/header';
 import { getMangaListing } from '@/lib/data';
 import db from '@/lib/db';
 import { indexChapters, loadMangasFromTcb } from '@/lib/tcb';
-import type { Chapter, Manga } from '@prisma/client';
-import Link from 'next/link';
+import type { Chapter, Manga, Panel } from '@prisma/client';
 import { notFound } from 'next/navigation';
 import type { Metadata, ResolvingMetadata } from 'next/types';
 
@@ -51,23 +52,26 @@ const Chapters = async ({
   chapters: chaptersOrPromise,
   manga,
 }: {
-  chapters: Promise<Chapter[]> | Chapter[];
+  chapters:
+    | Promise<(Chapter & { panels: Panel[] })[]>
+    | (Chapter & { panels: Panel[] })[];
   manga: Manga;
 }) => {
   const chapters = await chaptersOrPromise;
   return (
     <>
-      {chapters?.map((chapter) => (
-        <Link
-          className="flex flex-row gap-2"
-          key={chapter.key}
-          href={`/${manga.key}/${chapter.key}`}
-          prefetch={false}
-        >
-          <span className="font-bold">{chapter.key}</span>
-          <span>{chapter.title}</span>
-        </Link>
-      ))}
+      {chapters?.map((chapter) => {
+        const frontPage = chapter.panels[0];
+        return (
+          <Card
+            key={chapter.key}
+            href={`/${manga.key}/${chapter.key}`}
+            title={`Chapter ${chapter.key}`}
+            subtitle={chapter.title}
+            image={{ ...frontPage, width: 220, height: 320 }}
+          ></Card>
+        );
+      })}
     </>
   );
 };
@@ -81,12 +85,10 @@ export default async function Page({
   }
 
   return (
-    <div className="max-w-screen-xl mx-auto">
-      <div className="flex gap-4 mb-12 items-end">
-        <h1 className="text-2xl">{manga.title} Chapters</h1>
-        <Link href="/">Back</Link>
-      </div>
-      <div className="flex flex-col gap-6">
+    <div>
+      <Header title={`${manga.title} Chapters`} back={'/'} />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
         <Chapters chapters={manga.chapters} manga={manga} />
       </div>
     </div>
