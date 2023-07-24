@@ -18,23 +18,15 @@ export async function generateStaticParams() {
       // use only chapters that have analyzed panels for static site generation
       const chapters = await db.chapter.findMany({
         where: {
-          panels: {
-            some: {},
-          },
           manga: {
             key: slug,
           },
         },
         orderBy: { sort: 'desc' },
+        take: 100,
       });
-      const uncrawledChapters = await db.chapter.findMany({
-        where: { panels: { none: {} }, manga: { key: slug } },
-        orderBy: { sort: 'desc' },
-        // take: 2,
-      });
-      // const unanalyzedChapters: Chapter[] = [];
 
-      return [...chapters, ...uncrawledChapters].map((chapter) => ({
+      return chapters.map((chapter) => ({
         manga: slug,
         chapter: chapter.key,
       }));
