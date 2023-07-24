@@ -56,10 +56,17 @@ export const loadMangasFromTcb = cache(
 
 export const indexChapters = async (
   mangaKey: string,
-): Promise<(Manga & { chapters: Chapter[] }) | null> => {
+): Promise<
+  (Manga & { chapters: (Chapter & { panels: Panel[] })[] }) | null
+> => {
   const manga = await db.manga.findUnique({
     where: { key: mangaKey },
-    include: { chapters: { orderBy: { sort: 'desc' } } },
+    include: {
+      chapters: {
+        orderBy: { sort: 'desc' },
+        include: { panels: { orderBy: { sort: 'asc' }, take: 1 } },
+      },
+    },
   });
 
   if (!manga) {
@@ -71,7 +78,7 @@ export const indexChapters = async (
   );
 
   const chaptersFromTcb = await loadChapters({ path: manga?.path });
-  const chapters: Chapter[] = await Promise.all(
+  const chapters: (Chapter & { panels: Panel[] })[] = await Promise.all(
     chaptersFromTcb.reverse().map(async (data, sort) => {
       const existing = indexed.get(data.key);
       if (existing && existing.sort === sort) {
@@ -91,6 +98,9 @@ export const indexChapters = async (
             key: chapter.key,
             mangaId: manga.id,
           },
+        },
+        include: {
+          panels: { orderBy: { sort: 'asc' }, take: 1 },
         },
       });
     }),
@@ -141,7 +151,7 @@ export const loadPanels = cache(
       new Map(),
     );
 
-    const upsert: Omit<Panel, 'id'>[] = [];
+    const upsert: Pick<Panel, 'src' | 'sort' | 'title' | 'chapterId'>[] = [];
 
     imageElements.forEach(({ src, alt: title }, sort) => {
       const dbPanel = panelIndex.get(src);
@@ -154,10 +164,6 @@ export const loadPanels = cache(
         sort,
         src,
         title,
-        missing: dbPanel?.missing ?? false,
-        width: dbPanel?.width ?? null,
-        height: dbPanel?.height ?? null,
-        blurDataUrl: dbPanel?.blurDataUrl ?? null,
         chapterId: chapter.id,
       });
     });
@@ -168,7 +174,6 @@ export const loadPanels = cache(
 
     await db.$transaction(
       upsert.map((panel) => {
-        console.log(`upserting ${chapter.key}/${panel.sort}`);
         return db.panel.upsert({
           create: panel,
           update: panel,

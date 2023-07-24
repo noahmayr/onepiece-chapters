@@ -1,7 +1,7 @@
 import { cache } from 'react';
 import type { Chapter, Manga, Panel } from '@prisma/client';
 import db from './db';
-import { analyzePanels, loadPanels } from './tcb';
+import { loadPanels } from './tcb';
 
 export const getMangaListing = cache(async (): Promise<Manga[]> => {
   return await db.manga.findMany();
@@ -74,45 +74,6 @@ export const getChapterDetail = cache(
       getNeighbors(mangaKey, chapter.sort),
       loadPanels(chapter),
     ]);
-
-    // if (actualPanels.length > chapter.panels.length) {
-    //   const indexed = new Set(chapter.panels.map((panel) => panel.src));
-    //   const toIndex = actualPanels.filter((panel) => !indexed.has(panel.src));
-    //   if (!analyze) {
-    //     return {
-    //       ...chapter,
-    //       panels: [...chapter.panels, ...toIndex].sort(
-    //         (a, b) => a.sort - b.sort,
-    //       ) as Panel[],
-    //       prev,
-    //       next,
-    //     };
-    //   }
-    //   const analyzed = (await analyzePanels(toIndex)).map((panel) => ({
-    //     ...panel,
-    //     chapterId: chapter.id,
-    //   }));
-    //
-    //   try {
-    //     await db.panel.createMany({ data: analyzed });
-    //   } catch (e) {
-    //     console.error(
-    //       `error during create many for ${mangaKey}/${chapterKey}`,
-    //       analyzed,
-    //     );
-    //     throw new Error(
-    //       `error during create many for ${mangaKey}/${chapterKey}`,
-    //     );
-    //   }
-    //   return {
-    //     ...chapter,
-    //     panels: [...chapter.panels, ...analyzed].sort(
-    //       (a, b) => a.sort - b.sort,
-    //     ),
-    //     prev,
-    //     next,
-    //   };
-    // }
 
     return { ...chapter, panels, prev, next };
   },
