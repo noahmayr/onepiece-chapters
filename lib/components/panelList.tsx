@@ -2,7 +2,8 @@
 import type { Panel } from '@prisma/client';
 import { PanelComponent } from './panel';
 import { useInfiniteQuery } from 'react-query';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { flushSync } from 'react-dom';
 
 function chunks<T>(arr: T[], n: number): T[][] {
   const result: T[][] = [];
@@ -56,21 +57,26 @@ export function PanelList({ panels }: { panels: Panel[] }) {
       }
       console.log('now fetching page ', pageParam + 1);
       const result = await fetchPanels(ids);
-      result?.panels?.reduce((acc, panel) => {
-        acc.set(panel.id, panel);
-        return acc;
-      }, analyzed.current);
+      flushSync(() => {
+        result?.panels?.reduce((acc, panel) => {
+          acc.set(panel.id, panel);
+          return acc;
+        }, analyzed.current);
+      });
       const next = (pageParam as number) + 1;
+
       return {
         next: idsToAnalyse[next] ? next : undefined,
       };
     },
     getNextPageParam: (lastPage) => lastPage?.next,
   });
-  if (hasNextPage && !isFetching) {
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    fetchNextPage();
-  }
+
+  useEffect(() => {
+    if (hasNextPage && !isFetching) {
+      fetchNextPage().catch(console.error);
+    }
+  }, [fetchNextPage, hasNextPage, isFetching]);
 
   return panels.map((panel) => {
     const analyzedPanel = analyzed.current?.get(panel.id);
