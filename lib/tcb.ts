@@ -113,7 +113,11 @@ export const indexChapters = async (
 };
 
 export const loadChapters = cache(async (manga: Pick<Manga, 'path'>) => {
-  const html = await fetch(new URL(manga.path, TCB_HOST));
+  const html = await fetch(new URL(manga.path, TCB_HOST), {
+    next: {
+      revalidate: 900,
+    },
+  });
   const {
     window: { document },
   } = new JSDOM(await html.text());

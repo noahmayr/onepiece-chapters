@@ -9,7 +9,7 @@ import type { Metadata, ResolvingMetadata } from 'next/types';
 
 export const dynamic = 'force-static';
 export const dynamicParams = true;
-export const revalidate = false;
+export const revalidate = 900;
 
 export async function generateStaticParams() {
   let mangas: Omit<Manga, 'id'>[] = await getMangaListing();
