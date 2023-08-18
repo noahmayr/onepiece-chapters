@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 import type { Panel } from '@prisma/client';
 import { clsx } from 'clsx';
 
@@ -42,7 +41,11 @@ export function PanelComponent({
             { 'animate-pulse': !panel.missing },
           )}
         >
-          {panel.missing ? `Could not find panel: ${panel.title}` : null}
+          {panel.missing ? (
+            `Could not find panel: ${panel.title}`
+          ) : (
+            <link rel="preload" as="image" href={panel.src} />
+          )}
         </div>
       </div>
     );
@@ -52,10 +55,7 @@ export function PanelComponent({
   const rowClass = clsx(baseRowClass, { 'landscape:basis-2/5': !fullWidth });
   const placeHolderUrl = blurUrl(blurDataUrl, width, height);
   return (
-    <div
-      className={rowClass}
-      // style={{ flexGrow: 1, flexBasis: fullWidth ? '100%' : '40%' }}
-    >
+    <div className={rowClass}>
       <img
         src={src}
         alt={alt}

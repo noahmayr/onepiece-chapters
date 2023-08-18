@@ -11,8 +11,8 @@ export const mapConcurrently = async <T, R>(
   predicate: (item: T, index: number) => R | Promise<R>,
 ): Promise<R[]> => {
   const result: Promise<R>[] = [];
-  const jobs = items
-    .map((item: T, index: number): Future<R> => {
+  const jobs: Future<R>[] = items
+    .map((item: T, index: number) => {
       return async () => {
         return await predicate(item, index);
       };
@@ -27,8 +27,16 @@ export const mapConcurrently = async <T, R>(
       promise.finally(() => pool.delete(promise));
       job = jobs.pop();
     } else {
-      await Promise.race(pool);
+      try {
+        await Promise.race(pool);
+      } catch {}
     }
   }
-  return await Promise.all(result);
+  const results = await Promise.allSettled(result);
+  return results
+    .filter(
+      <T>(item: PromiseSettledResult<T>): item is PromiseFulfilledResult<T> =>
+        item.status === 'fulfilled',
+    )
+    .map((item) => item.value);
 };

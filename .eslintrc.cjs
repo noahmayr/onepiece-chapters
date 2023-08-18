@@ -13,6 +13,7 @@ module.exports = {
     project: true,
   },
   rules: {
+    '@next/next/no-img-element': 0,
     '@typescript-eslint/consistent-type-imports': [
       'error',
       {
