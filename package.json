@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@plaiceholder/next": "^3.0.0",
-    "@prisma/client": "^5.0.0",
+    "@prisma/client": "^5.1.1",
     "@types/node": "20.4.1",
     "@types/react": "18.2.14",
     "@types/react-dom": "18.2.6",
@@ -48,7 +48,7 @@
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "dotenv-cli": "^7.2.1",
     "prettier": "^3.0.0",
-    "prisma": "^5.0.0"
+    "prisma": "^5.1.1"
   },
   "volta": {
     "node": "18.16.1"

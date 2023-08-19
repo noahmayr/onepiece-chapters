@@ -5,7 +5,7 @@ import type { Chapter, Manga, Panel } from '@prisma/client';
 import { getPlaiceholder } from 'plaiceholder';
 import db from './db';
 import { isDefined, mapConcurrently } from './util';
-import type { SetOptional } from 'type-fest';
+import type { SetOptional, SetRequired } from 'type-fest';
 
 const TCB_HOST = 'https://tcbscans.com/';
 const MANGAS_ENDPOINT = '/projects';
@@ -147,53 +147,90 @@ export const loadPanels = cache(
     const imageElements = Array.from(
       document.querySelectorAll<HTMLImageElement>('img.fixed-ratio-content'),
     );
-    const panelIndex = chapter.panels.reduce<Map<string, Panel>>(
+    const panelIndex = chapter.panels.reduce<Map<number, Panel>>(
       (acc, panel) => {
-        acc.set(panel.src, panel);
+        acc.set(panel.sort, panel);
         return acc;
       },
       new Map(),
     );
 
-    const upsert: Pick<Panel, 'src' | 'sort' | 'title' | 'chapterId'>[] = [];
+    const toUpdate: SetRequired<Partial<Panel>, 'id'>[] = [];
+    const toInsert: Pick<Panel, 'src' | 'sort' | 'title' | 'chapterId'>[] = [];
 
     imageElements.forEach(({ src, alt: title }, sort) => {
-      const dbPanel = panelIndex.get(src);
-      const needsUpsert = dbPanel?.sort !== sort || dbPanel?.title !== title;
-      if (!needsUpsert) {
+      const dbPanel = panelIndex.get(sort);
+      if (!dbPanel) {
+        toInsert.push({
+          sort,
+          src,
+          title,
+          chapterId: chapter.id,
+        });
+        return;
+      }
+      panelIndex.delete(sort);
+
+      let hasChanges = false;
+
+      const changes: (typeof toUpdate)[number] = { id: dbPanel.id };
+
+      if (src !== dbPanel.src) {
+        hasChanges = true;
+        changes.src = src;
+        changes.missing = false;
+        changes.width = null;
+        changes.height = null;
+        changes.blurDataUrl = null;
+      }
+
+      if (title !== dbPanel.title) {
+        hasChanges = true;
+        changes.title = title;
+      }
+
+      if (!hasChanges) {
         return;
       }
 
-      upsert.push({
-        sort,
+      toUpdate.push({
+        id: dbPanel.id,
         src,
         title,
-        chapterId: chapter.id,
       });
     });
 
-    if (!upsert.length) {
+    const hasChanges = await db.$transaction(async (tx) => {
+      const toDelete = Array.from(panelIndex).map(([, panel]) => panel.id);
+      if (toDelete.length) {
+        await tx.panel.deleteMany({ where: { id: { in: toDelete } } });
+      }
+      if (toUpdate.length) {
+        await Promise.all(
+          toUpdate.map((panel) =>
+            tx.panel.update({
+              data: panel,
+              where: { id: panel.id },
+            }),
+          ),
+        );
+      }
+      if (toInsert.length) {
+        await tx.panel.createMany({ data: toInsert });
+      }
+      return toDelete.length || toUpdate.length || toInsert.length;
+    });
+
+    if (!hasChanges) {
       return chapter;
     }
 
-    await db.$transaction(
-      upsert.map((panel) => {
-        return db.panel.upsert({
-          create: panel,
-          update: panel,
-          where: { src: panel.src },
-        });
-      }),
-    );
+    const panels = await db.panel.findMany({
+      where: { chapterId: chapter.id },
+      orderBy: { sort: 'asc' },
+    });
 
-    const panels = (
-      await db.chapter.findUnique({
-        where: { id: chapter.id },
-        include: { panels: { orderBy: { sort: 'asc' } } },
-      })
-    )?.panels;
-
-    if (!panels) {
+    if (!panels.length) {
       console.error(
         `failed to load panels for chapter id ${chapter.id} after updating them. This should not be possible`,
       );

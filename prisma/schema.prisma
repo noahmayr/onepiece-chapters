@@ -14,7 +14,7 @@ datasource db {
 model Panel {
   id          Int     @id @default(autoincrement())
   sort        Int
-  src         String  @unique @db.VarChar(768)
+  src         String  @db.VarChar(768)
   title       String  @db.TinyText
   missing     Boolean @default(false)
   width       Int?
